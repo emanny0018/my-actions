@@ -1,21 +1,35 @@
-name: Build
+name: SonarQube Scan
 
 on:
   push:
     branches:
       - main
 
-
 jobs:
-  build:
-    name: Build
+  sonarqube-analysis:
+    name: SonarQube Analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: sonarsource/sonarqube-scan-action@master
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      
+          # Additional parameters if needed:
+          # SONAR_PROJECT_KEY: Tic-game
+          # SONAR_SOURCES: src  # Adjust according to your project structure
+
+      # Uncomment the following lines if you wish to fail the job on Quality Gate failure
+      # - name: SonarQube Quality Gate
+      #   uses: sonarsource/sonarqube-quality-gate-action@master
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      #   with:
+      #     projectKey: Tic-game
+      #     waitForQualityGate: 'true'
+
+      # Optional: Add any additional steps or actions as needed

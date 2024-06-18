@@ -9,7 +9,7 @@ on:
 jobs:
   build-analyze-scan:
     name: Build
-    runs-on: [self-hosted]
+    runs-on: [Linux]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -31,27 +31,27 @@ jobs:
       - name: Docker Build and push
         run: |
           docker build -t tic-tac-toe .
-          docker tag tic-tac-toe sevenajay/tic-tac-toe:latest
+          docker tag tic-tac-toe emanny0018/tic-tac-toe:latest
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
-          docker push sevenajay/tic-tac-toe:latest
+          docker push emanny0018/tic-tac-toe:latest
         env:
           DOCKER_CLI_ACI: 1
 
       - name: Image scan
-        run: trivy image sevenajay/tic-tac-toe:latest > trivyimage.txt
+        run: trivy image emanny0018/tic-tac-toe:latest > trivyimage.txt
 
   deploy:
    needs: build-analyze-scan   
-   runs-on: [self-hosted]
+   runs-on: [Linux]
    steps:
       - name: docker pull image
-        run: docker pull sevenajay/tic-tac-toe:latest
+        run: docker pull emanny0018/tic-tac-toe:latest
 
       - name: Image scan
-        run: trivy image sevenajay/tic-tac-toe:latest > trivyimagedeploy.txt  
+        run: trivy image emanny0018y/tic-tac-toe:latest > trivyimagedeploy.txt  
   
       - name: Deploy to container
-        run: docker run -d --name game -p 3000:3000 sevenajay/tic-tac-toe:latest
+        run: docker run -d --name game -p 3000:3000 emanny0018/tic-tac-toe:latest
 
       - name: Update kubeconfig
         run: aws eks --region us-west-1 update-kubeconfig --name EKS_CLOUD

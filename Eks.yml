@@ -8,12 +8,12 @@ on:
 jobs:
   build-analyze-scan:
     name: Build, Analyze, and Scan
-    runs-on: [Linux]
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0  # Ensure full history is fetched for SonarQube analysis
 
       - name: Build and analyze with SonarQube
         uses: sonarsource/sonarqube-scan-action@master
@@ -21,20 +21,17 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      - name: npm install dependency
+      - name: Install npm dependencies
         run: npm install
 
       - name: Trivy file scan
         run: trivy fs . > trivyfs.txt
 
-      - name: Docker Build and push
+      - name: Docker Build and Push
         run: |
-          docker build -t tic-tac-toe .
-          docker tag tic-tac-toe emanny0018/tic-tac-toe:latest
+          docker build -t emanny0018/tic-tac-toe:latest .
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
           docker push emanny0018/tic-tac-toe:latest
-        env:
-          DOCKER_CLI_ACI: 1
 
       - name: Image scan
         run: trivy image emanny0018/tic-tac-toe:latest > trivyimage.txt
@@ -42,6 +39,9 @@ jobs:
   deploy:
     needs: build-analyze-scan   
     runs-on: self-hosted
+    tags:
+      - eks
+      - github-actions
     steps:
       - name: Docker Pull Image
         run: docker pull emanny0018/tic-tac-toe:latest
@@ -51,14 +51,14 @@ jobs:
 
       - name: Stop and Remove Existing Container (if exists)
         run: |
-          docker stop manny || true
-          docker rm manny || true
+          docker stop game || true
+          docker rm game || true
 
       - name: Deploy to Container
-        run: docker run -d --name manny -p 3000:3000 emanny0018/tic-tac-toe:latest
+        run: docker run -d --name game -p 3000:3000 emanny0018/tic-tac-toe:latest
 
       - name: Update kubeconfig
-        run: aws eks --region us-west-1 update-kubeconfig --name EKS_CLOUD
+        run: aws eks --region us-east-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Deploy to Kubernetes
         run: kubectl apply -f deployment-service.yml

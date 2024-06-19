@@ -1,14 +1,13 @@
-name: Build,Analyze,scan
+name: Build, Analyze, and Deploy
 
 on:
   push:
     branches:
       - main
 
-
 jobs:
   build-analyze-scan:
-    name: Build
+    name: Build, Analyze, and Scan
     runs-on: [Linux]
     steps:
       - name: Checkout code
@@ -21,7 +20,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          
+
       - name: npm install dependency
         run: npm install
 
@@ -41,25 +40,30 @@ jobs:
         run: trivy image emanny0018/tic-tac-toe:latest > trivyimage.txt
 
   deploy:
-   needs: build-analyze-scan   
-   runs-on: [self-hosted]
-   steps:
-      - name: docker pull image
+    needs: build-analyze-scan   
+    runs-on: self-hosted
+    steps:
+      - name: Docker Pull Image
         run: docker pull emanny0018/tic-tac-toe:latest
 
-      - name: Image scan
-        run: trivy image emanny0018/tic-tac-toe:latest > trivyimagedeploy.txt  
-  
-      - name: Deploy to container
+      - name: Image scan before deployment
+        run: trivy image emanny0018/tic-tac-toe:latest > trivyimagedeploy.txt
+
+      - name: Stop and Remove Existing Container (if exists)
+        run: |
+          docker stop manny || true
+          docker rm manny || true
+
+      - name: Deploy to Container
         run: docker run -d --name manny -p 3000:3000 emanny0018/tic-tac-toe:latest
 
       - name: Update kubeconfig
         run: aws eks --region us-west-1 update-kubeconfig --name EKS_CLOUD
 
-      - name: Deploy to kubernetes
+      - name: Deploy to Kubernetes
         run: kubectl apply -f deployment-service.yml
-  
-      - name: Send a Slack Notification
+
+      - name: Send Slack Notification
         if: always()
         uses: act10ns/slack@v1
         with:

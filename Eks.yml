@@ -42,16 +42,16 @@ jobs:
 
   deploy:
    needs: build-analyze-scan   
-   runs-on: [Linux]
+   runs-on: [self-hosted]
    steps:
       - name: docker pull image
         run: docker pull emanny0018/tic-tac-toe:latest
 
       - name: Image scan
-        run: trivy image emanny0018y/tic-tac-toe:latest > trivyimagedeploy.txt  
+        run: trivy image emanny0018/tic-tac-toe:latest > trivyimagedeploy.txt  
   
       - name: Deploy to container
-        run: docker run -d --name game -p 3000:3000 emanny0018/tic-tac-toe:latest
+        run: docker run -d --name manny -p 3000:3000 emanny0018/tic-tac-toe:latest
 
       - name: Update kubeconfig
         run: aws eks --region us-west-1 update-kubeconfig --name EKS_CLOUD
@@ -68,6 +68,3 @@ jobs:
           channel: '#githubactions-eks'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  
-
-        
